@@ -26,7 +26,7 @@ async function fetchSafetyScore(url) {
             if (data.safetyScores[url]) {
                 resolve(data.safetyScores[url]);
             } else {
-                fetch(`http://localhost:3000/api/check?url=${url}`)
+                fetch(`https://broswebuddy.onrender.com/api/check?url=${url}`)
                     .then(response => response.json())
                     .then(data => {
                         safetyScores[url] = data.score;
