@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background-color: #f2f2f2; }
+        button { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h1>Admin Panel</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>URL</th>
+                <th>Score</th>
+                <th>User</th>
+                <th>Approved</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="scoreTable"></tbody>
+    </table>
+    <script>
+        // Fetch scores and populate the table
+        fetch('http://localhost:3000/api/scores')
+            .then(response => response.json())
+            .then(data => {
+                const scoreTable = document.getElementById('scoreTable');
+                for (const url in data) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${url}</td>
+                        <td>${data[url].score}</td>
+                        <td>${data[url].user}</td>
+                        <td>${data[url].approved}</td>
+                        <td>
+                            <button onclick="approveScore('${url}')">Approve</button>
+                        </td>
+                    `;
+                    scoreTable.appendChild(row);
+                }
+            });
+
+        function approveScore(url) {
+            fetch('http://localhost:3000/api/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
