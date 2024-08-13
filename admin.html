@@ -28,7 +28,7 @@
     </table>
     <script>
         // Fetch scores and populate the table
-        fetch('http://localhost:3000/api/scores')
+        fetch('https://broswebuddy.onrender.com/api/scores')
             .then(response => response.json())
             .then(data => {
                 const scoreTable = document.getElementById('scoreTable');
