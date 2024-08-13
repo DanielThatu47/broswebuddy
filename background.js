@@ -1,3 +1,7 @@
+require('dotenv').config();
+const GOOGLE_SAFE_BROWSING_API_KEY = process.env.GOOGLE_SAFE_BROWSING_API_KEY;
+const VIRUSTOTAL_API_KEY = process.env.VIRUSTOTAL_API_KEY;
+
 let safetyScores = {};
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -64,7 +68,7 @@ function submitSafetyScore(url, score, user) {
 
 
 
-const GOOGLE_SAFE_BROWSING_API_KEY = 'AIzaSyDd4dLoXFwoWf2CVSh5-QzxgAKurRkUC4A';
+
 
 function checkWithGoogleSafeBrowsing(url) {
     const requestUrl = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GOOGLE_SAFE_BROWSING_API_KEY}`;
@@ -126,7 +130,7 @@ async function checkSafety(url) {
 
 
 
-const VIRUSTOTAL_API_KEY = 'YOUR_API_KEY';
+
 
 function checkWithVirusTotal(url) {
     const requestUrl = `https://www.virustotal.com/api/v3/urls`;
