@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById("viewReport").addEventListener("click", () => {
-      fetch(`http://localhost:3000/api/report?url=${url}`)
+      fetch(`https://broswebuddy.onrender.com/api/report?url=${url}`)
         .then(response => response.json())
         .then(data => {
           document.getElementById("report").innerText = JSON.stringify(data, null, 2);
