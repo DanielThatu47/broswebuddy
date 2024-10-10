@@ -1,17 +1,100 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link rel="stylesheet" href="popup.css">
+  <title>Gemini Text Tools</title>
+  <style>
+    body {
+      width: 350px;
+      padding: 15px;
+      font-family: Arial, sans-serif;
+    }
+    .section {
+      margin-bottom: 15px;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    button {
+      flex: 1;
+      padding: 8px;
+      cursor: pointer;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #1557b0;
+    }
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    #result {
+      white-space: pre-wrap;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .loading {
+      text-align: center;
+      margin: 10px 0;
+    }
+    .options {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .option-group {
+      flex: 1;
+    }
+  </style>
 </head>
 <body>
-  <div>
-    <h1>Website Safety Checker</h1>
-    <div id="safety-status">Loading...</div>
-    <input type="number" id="score" placeholder="Enter Safety Score (0-100)" />
-    <button id="submitScore">Submit Score</button>
-    <button id="viewReport">View Detailed Report</button>
-    <pre id="report"></pre>
+  <div class="options">
+    <div class="option-group">
+      <label for="translateLang">Translate to:</label>
+      <select id="translateLang">
+        <option value="English">English</option>
+        <option value="Spanish">Spanish</option>
+        <option value="French">French</option>
+        <option value="German">German</option>
+        <option value="Italian">Italian</option>
+        <option value="Japanese">Japanese</option>
+        <option value="Korean">Korean</option>
+        <option value="Chinese">Chinese</option>
+        <option value="Russian">Russian</option>
+        <option value="Arabic">Arabic</option>
+      </select>
+    </div>
+    <div class="option-group">
+      <label for="summaryLength">Summary length:</label>
+      <select id="summaryLength">
+        <option value="brief">Brief</option>
+        <option value="moderate">Moderate</option>
+        <option value="detailed">Detailed</option>
+      </select>
+    </div>
   </div>
+  <div class="buttons">
+    <button id="summarizeBtn">Summarize</button>
+    <button id="translateBtn">Translate</button>
+  </div>
+  <div id="loading" class="loading" style="display: none;">Processing...</div>
+  <div id="result"></div>
   <script src="popup.js"></script>
 </body>
 </html>

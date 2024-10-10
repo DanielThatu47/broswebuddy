@@ -1,171 +1,80 @@
-require('dotenv').config();
-const GOOGLE_SAFE_BROWSING_API_KEY = process.env.GOOGLE_SAFE_BROWSING_API_KEY;
-const VIRUSTOTAL_API_KEY = process.env.VIRUSTOTAL_API_KEY;
-
-let safetyScores = {};
-
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.set({ safetyScores: {} });
+chrome.runtime.onInstalled.addListener(function() {
+  chrome.contextMenus.create({
+    id: "summarize",
+    title: "Summarize text",
+    contexts: ["selection"]
+  });
+  chrome.contextMenus.create({
+    id: "translate",
+    title: "Translate text",
+    contexts: ["selection"]
+  });
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "submitSafetyScore") {
-        submitSafetyScore(request.url, request.score, request.user).then(response => {
-            sendResponse({ status: "success", message: response.message });
-        }).catch(error => {
-            sendResponse({ status: "error", message: error.message });
-        });
-        return true; // Keep the message channel open for sendResponse
+chrome.contextMenus.onClicked.addListener(function(info, tab) {
+  chrome.storage.sync.get(['apiKey'], function(result) {
+    if (!result.apiKey) {
+      console.error('API key not found. Please set your OpenAI API key in the extension popup.');
+      return;
     }
+
+    const selectedText = info.selectionText;
+    let prompt;
+    let action;
+
+    if (info.menuItemId === "summarize") {
+      prompt = `Please summarize the following text:\n\n${selectedText}`;
+      action = "Summary";
+    } else if (info.menuItemId === "translate") {
+      prompt = `Please translate the following text to English:\n\n${selectedText}`;
+      action = "Translation";
+    }
+
+    fetchChatGPTResponse(result.apiKey, prompt, action, tab.id);
+  });
 });
 
-async function checkSafety(url) {
-    let safetyScore = await fetchSafetyScore(url);
-    return safetyScore;
-}
-
-async function fetchSafetyScore(url) {
-    return new Promise((resolve, reject) => {
-        chrome.storage.local.get("safetyScores", (data) => {
-            if (data.safetyScores[url]) {
-                resolve(data.safetyScores[url]);
-            } else {
-                fetch(`https://broswebuddy.onrender.com/api/check?url=${url}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        safetyScores[url] = data.score;
-                        chrome.storage.local.set({ safetyScores: safetyScores });
-                        resolve(data.score);
-                    })
-                    .catch(reject);
-            }
-        });
+async function fetchChatGPTResponse(apiKey, prompt, action, tabId) {
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [{
+          role: "user",
+          content: prompt
+        }]
+      })
     });
-}
 
-function submitSafetyScore(url, score, user) {
-    return new Promise((resolve, reject) => {
-        fetch("https://localhost:3000/api/submit", {
-            method: "POST",
-            body: JSON.stringify({ url, score, user }),
-            headers: { "Content-Type": "application/json" }
-        })
-            .then(response => response.json())
-            .then(resolve)
-            .catch(reject);
+    const data = await response.json();
+    const result = data.choices[0].message.content;
+    
+    // Log to extension's background script console
+    console.log(`${action} result:`, result);
+    
+    // Execute a content script to log in the webpage's console
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: (actionType, text) => {
+        console.log(`ChatGPT ${actionType} Result:`, text);
+      },
+      args: [action, result]
     });
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function checkWithGoogleSafeBrowsing(url) {
-    const requestUrl = `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GOOGLE_SAFE_BROWSING_API_KEY}`;
-
-    const body = {
-        client: {
-            clientId: "yourcompanyname",
-            clientVersion: "1.5.2"
-        },
-        threatInfo: {
-            threatTypes: ["MALWARE", "SOCIAL_ENGINEERING"],
-            platformTypes: ["ANY_PLATFORM"],
-            threatEntryTypes: ["URL"],
-            threatEntries: [{ url: url }]
-        }
-    };
-
-    return fetch(requestUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.matches) {
-                return { safe: false, data: data.matches };
-            }
-            return { safe: true };
-        })
-        .catch(error => {
-            console.error('Error checking Google Safe Browsing:', error);
-            return { safe: true }; // Default to safe if error
-        });
-}
-
-// Usage within the checkSafety function
-async function checkSafety(url) {
-    // Existing logic...
-
-    // Check with Google Safe Browsing
-    const safeBrowsingResult = await checkWithGoogleSafeBrowsing(url);
-    if (!safeBrowsingResult.safe) {
-        notifyUser('This site is flagged by Google Safe Browsing!', 'unsafe');
-    }
-
-    // Additional logic...
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function checkWithVirusTotal(url) {
-    const requestUrl = `https://www.virustotal.com/api/v3/urls`;
-
-    // Encode the URL in base64
-    const urlEncoded = btoa(url);
-
-    return fetch(`${requestUrl}/${urlEncoded}`, {
-        method: 'GET',
-        headers: {
-            'x-apikey': VIRUSTOTAL_API_KEY
-        }
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.data.attributes.last_analysis_stats.malicious > 0) {
-                return { safe: false, data: data.data.attributes.last_analysis_stats };
-            }
-            return { safe: true };
-        })
-        .catch(error => {
-            console.error('Error checking VirusTotal:', error);
-            return { safe: true }; // Default to safe if error
-        });
-}
-
-// Usage within the checkSafety function
-async function checkSafety(url) {
-    // Existing logic...
-
-    // Check with VirusTotal
-    const virusTotalResult = await checkWithVirusTotal(url);
-    if (!virusTotalResult.safe) {
-        notifyUser('This site is flagged by VirusTotal!', 'unsafe');
-    }
-
-    // Additional logic...
+    
+    // Create a notification with the result
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icon48.png',
+      title: `ChatGPT ${action}`,
+      message: result
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error processing request. Please check your API key and try again.');
+  }
 }
